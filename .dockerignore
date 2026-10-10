@@ -1,0 +1,13 @@
+.git
+.venv
+.env
+.env.*
+mobile
+tmp
+ml/data
+ml/artifacts
+**/__pycache__
+**/*.db
+**/*.egg-info
+**/.pytest_cache
+**/.ruff_cache

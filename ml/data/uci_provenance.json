@@ -1,0 +1,6 @@
+{
+  "source": "https://archive.ics.uci.edu/dataset/228/sms+spam+collection",
+  "license": "CC BY 4.0 as stated by UCI dataset page; attribution required",
+  "label_definition": "0=ham, 1=spam. Spam is a proxy, not a verified fraud label.",
+  "purpose": "Offline baseline evaluation only. Not enabled for production inference by default."
+}

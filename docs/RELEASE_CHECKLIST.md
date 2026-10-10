@@ -1,0 +1,14 @@
+# Release checklist
+- [x] Final Flutter analyzer, Android API journey, four Android UI tests and application debug APK verified; Windows/Chrome runner limits documented
+- [ ] Real device end-to-end journeys, recording, secure storage, export and accessibility
+- [ ] PostgreSQL upgrade/downgrade/concurrency and account isolation
+- [ ] HTTPS proxy configuration, trusted forwarding and redacted gateway logs
+- [ ] SMTP verification/reset receipt and credential rotation
+- [ ] Optional speech/reputation configured, consented, quota/failure verified
+- [x] Pinned Python dependency audit found no known vulnerabilities on 2026-10-10; re-audit before release
+- [ ] Representative fraud dataset evaluation and calibration before accuracy claims
+- [ ] Hourly retention, encrypted backup restoration and deletion reconciliation
+- [ ] Owner-approved privacy, terms, contact channel and recording obligations
+- [ ] Android release signing / iOS provisioning and store requirements
+- [ ] Load, latency, availability monitoring and incident procedures
+- [x] Feature matrix and test report match observed development checks and disclose remaining validation

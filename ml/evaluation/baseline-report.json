@@ -1,0 +1,66 @@
+{
+  "dataset": {
+    "source": "https://archive.ics.uci.edu/dataset/228/sms+spam+collection",
+    "license": "CC BY 4.0 as stated by UCI dataset page; attribution required",
+    "label_definition": "0=ham, 1=spam. Spam is a proxy, not a verified fraud label.",
+    "purpose": "Offline baseline evaluation only. Not enabled for production inference by default."
+  },
+  "dataset_sha256": "e4ff45a2a42d53e0dd0139bef2bb404a88fe897f36a26be27da62255df538494",
+  "seed": 42,
+  "unique_examples": 5137,
+  "conflicting_templates_removed": 0,
+  "split": {
+    "train": 3595,
+    "validation": 771,
+    "test": 771
+  },
+  "validation": {
+    "0": {
+      "precision": 0.9867060561299852,
+      "recall": 0.9852507374631269,
+      "f1-score": 0.9859778597785978,
+      "support": 678.0
+    },
+    "1": {
+      "precision": 0.8936170212765957,
+      "recall": 0.9032258064516129,
+      "f1-score": 0.8983957219251337,
+      "support": 93.0
+    },
+    "accuracy": 0.9753566796368353,
+    "macro avg": {
+      "precision": 0.9401615387032904,
+      "recall": 0.9442382719573699,
+      "f1-score": 0.9421867908518657,
+      "support": 771.0
+    },
+    "weighted avg": {
+      "precision": 0.9754774176846347,
+      "recall": 0.9753566796368353,
+      "f1-score": 0.9754134773916041,
+      "support": 771.0
+    }
+  },
+  "test": {
+    "precision": 0.9263157894736842,
+    "recall": 0.946236559139785,
+    "f1": 0.9361702127659575,
+    "pr_auc": 0.9795660018636028,
+    "confusion_matrix": [
+      [
+        671,
+        7
+      ],
+      [
+        5,
+        88
+      ]
+    ]
+  },
+  "limitations": [
+    "Spam labels are not verified fraud labels unless provenance says otherwise.",
+    "Template normalization reduces but cannot eliminate semantic leakage.",
+    "Not validated for URL, email, voice, regional languages or deployment traffic.",
+    "Model outputs are uncalibrated signals."
+  ]
+}
