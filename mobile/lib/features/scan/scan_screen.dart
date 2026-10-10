@@ -34,6 +34,7 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
   final phone = TextEditingController();
   final recorder = AudioRecorder();
   final player = AudioPlayer();
+  late final Api sessionApi;
   bool busy = false, recording = false, recordingBusy = false;
   bool uploading = false;
   String? audioPath, error;
@@ -45,7 +46,8 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    ref.read(apiProvider).changed.addListener(_receiveShare);
+    sessionApi = ref.read(apiProvider);
+    sessionApi.changed.addListener(_receiveShare);
     _receiveShare();
   }
 
@@ -54,9 +56,22 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.initialChannel != widget.initialChannel &&
         channels.contains(widget.initialChannel) &&
-        !busy && !recording && !recordingBusy) {
+        !busy &&
+        !recording &&
+        !recordingBusy) {
       channel = widget.initialChannel;
       error = null;
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final active = ViewRefreshScope.of(context)?.activeIndex;
+    if (active != null && active != 1 && recording && !recordingBusy) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && recording && !recordingBusy) toggleRecord();
+      });
     }
   }
 
@@ -79,7 +94,7 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    ref.read(apiProvider).changed.removeListener(_receiveShare);
+    sessionApi.changed.removeListener(_receiveShare);
     timer?.cancel();
     recorder.dispose();
     player.dispose();
@@ -87,7 +102,13 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
     if (localPath != null) {
       File(localPath).delete().catchError((_) => File(localPath));
     }
-    for (final controller in [...drafts.values, sender, reply, subject, phone]) {
+    for (final controller in [
+      ...drafts.values,
+      sender,
+      reply,
+      subject,
+      phone,
+    ]) {
       controller.dispose();
     }
     super.dispose();
@@ -211,6 +232,7 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
         }
       } else {
         await player.stop();
+        if (!mounted) return;
         final agreed = await confirm(
           context,
           'Use your microphone?',
@@ -317,14 +339,18 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
           enabled: !controlsLocked,
           controller: sender,
           keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(labelText: 'Sender address (optional)'),
+          decoration: const InputDecoration(
+            labelText: 'Sender address (optional)',
+          ),
         ),
         const SizedBox(height: ShieldSpace.lg),
         TextField(
           enabled: !controlsLocked,
           controller: reply,
           keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(labelText: 'Reply-to address (optional)'),
+          decoration: const InputDecoration(
+            labelText: 'Reply-to address (optional)',
+          ),
         ),
         const SizedBox(height: ShieldSpace.lg),
         TextField(
@@ -344,55 +370,75 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
         const SectionHeading('Voice recording'),
         const SizedBox(height: ShieldSpace.md),
         Text(
-          recording ? 'Recording · $recordingTime / 03:00' :
-          audioPath != null ? 'Recording ready · $recordingTime' :
-          'Record with consent or choose a WAV file.',
+          recording
+              ? 'Recording Â· $recordingTime / 03:00'
+              : audioPath != null
+              ? 'Recording ready Â· $recordingTime'
+              : 'Record with consent or choose a WAV file.',
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: ShieldSpace.lg),
-        AdaptiveActions(children: [
-          OutlinedButton.icon(
-            onPressed: busy || recordingBusy ? null : toggleRecord,
-            icon: Icon(recording ? Icons.stop_circle_outlined : Icons.mic_none),
-            label: Text(recording ? 'Stop recording' : audioPath != null ? 'Record again' : 'Record with consent'),
-          ),
-          if (audioPath != null && !recording) ...[
+        AdaptiveActions(
+          children: [
             OutlinedButton.icon(
-              onPressed: controlsLocked ? null : () async {
-                try {
-                  await player.play(DeviceFileSource(audioPath!));
-                } catch (e) {
-                  if (mounted) setState(() => error = errorMessage(e));
-                }
-              },
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('Play'),
+              onPressed: busy || recordingBusy ? null : toggleRecord,
+              icon: Icon(
+                recording ? Icons.stop_circle_outlined : Icons.mic_none,
+              ),
+              label: Text(
+                recording
+                    ? 'Stop recording'
+                    : audioPath != null
+                    ? 'Record again'
+                    : 'Record with consent',
+              ),
             ),
-            TextButton(
-              onPressed: controlsLocked ? null : () async {
-                try {
-                  await player.stop();
-                } catch (e) {
-                  if (mounted) setState(() => error = errorMessage(e));
-                }
-              },
-              child: const Text('Stop playback'),
-            ),
-            TextButton.icon(
-              onPressed: controlsLocked ? null : deleteRecording,
-              icon: const Icon(Icons.delete_outline),
-              label: const Text('Delete recording'),
-            ),
+            if (audioPath != null && !recording) ...[
+              OutlinedButton.icon(
+                onPressed: controlsLocked
+                    ? null
+                    : () async {
+                        try {
+                          await player.play(DeviceFileSource(audioPath!));
+                        } catch (e) {
+                          if (mounted) setState(() => error = errorMessage(e));
+                        }
+                      },
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Play'),
+              ),
+              TextButton(
+                onPressed: controlsLocked
+                    ? null
+                    : () async {
+                        try {
+                          await player.stop();
+                        } catch (e) {
+                          if (mounted) setState(() => error = errorMessage(e));
+                        }
+                      },
+                child: const Text('Stop playback'),
+              ),
+              TextButton.icon(
+                onPressed: controlsLocked ? null : deleteRecording,
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Delete recording'),
+              ),
+            ],
           ],
-        ]),
+        ),
         const SizedBox(height: ShieldSpace.md),
         FilledButton.tonalIcon(
           onPressed: controlsLocked ? null : () => submit(audio: true),
           icon: const Icon(Icons.file_upload_outlined),
-          label: Text(audioPath == null ? 'Choose & scan WAV' : 'Submit recording'),
+          label: Text(
+            audioPath == null ? 'Choose & scan WAV' : 'Submit recording',
+          ),
         ),
         const SizedBox(height: ShieldSpace.lg),
-        const Text('PCM WAV · up to 10 MB · up to 3 minutes. A configured speech model on your backend is required. Audio is uploaded only when you submit it.'),
+        const Text(
+          'PCM WAV Â· up to 10 MB Â· up to 3 minutes. A configured speech model on your backend is required. Audio is uploaded only when you submit it.',
+        ),
       ],
     ),
   );
@@ -404,7 +450,8 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
       const PageHeading(
         eyebrow: 'NEW SCAN',
         title: 'Check before you act',
-        subtitle: 'Choose what you received. We’ll explain the signals to help you decide what to do next.',
+        subtitle:
+            'Choose what you received. Weâ€™ll explain the signals to help you decide what to do next.',
       ),
       Wrap(
         spacing: ShieldSpace.sm,
@@ -415,21 +462,29 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
               avatar: Icon(channelIcon(name), size: 18),
               label: Text(channelLabel(name)),
               selected: channel == name,
-              onSelected: controlsLocked ? null : (_) => setState(() {
-                channel = name;
-                error = null;
-              }),
+              onSelected: controlsLocked
+                  ? null
+                  : (_) => setState(() {
+                      channel = name;
+                      error = null;
+                    }),
             ),
         ],
       ),
       if (channel == 'voice') voiceControls(),
       if (channel == 'call') ...[
-        const Notice('Only your description is analyzed. Caller identity and phone reputation are not verified.', icon: Icons.phone_outlined),
+        const Notice(
+          'Only your description is analyzed. Caller identity and phone reputation are not verified.',
+          icon: Icons.phone_outlined,
+        ),
         TextField(
           enabled: !controlsLocked,
           controller: phone,
           keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(labelText: 'Phone number (optional)', helperText: 'Context only; this does not verify the caller.'),
+          decoration: const InputDecoration(
+            labelText: 'Phone number (optional)',
+            helperText: 'Context only; this does not verify the caller.',
+          ),
         ),
       ],
       SurfaceCard(
@@ -444,10 +499,25 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
               _ => 'Text message',
             }),
             const SizedBox(height: ShieldSpace.sm),
-            AdaptiveActions(children: [
-              TextButton.icon(onPressed: controlsLocked ? null : paste, icon: const Icon(Icons.content_paste), label: const Text('Paste')),
-              TextButton.icon(onPressed: controlsLocked ? null : () => setState(() { content.clear(); error = null; }), icon: const Icon(Icons.clear), label: const Text('Clear')),
-            ]),
+            AdaptiveActions(
+              children: [
+                TextButton.icon(
+                  onPressed: controlsLocked ? null : paste,
+                  icon: const Icon(Icons.content_paste),
+                  label: const Text('Paste'),
+                ),
+                TextButton.icon(
+                  onPressed: controlsLocked
+                      ? null
+                      : () => setState(() {
+                          content.clear();
+                          error = null;
+                        }),
+                  icon: const Icon(Icons.clear),
+                  label: const Text('Clear'),
+                ),
+              ],
+            ),
             const SizedBox(height: ShieldSpace.sm),
             TextField(
               key: ValueKey('scan-input-$channel'),
@@ -456,7 +526,9 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
               minLines: channel == 'url' ? 2 : 5,
               maxLines: channel == 'url' ? 4 : 10,
               maxLength: channel == 'url' ? 4096 : 20000,
-              keyboardType: channel == 'url' ? TextInputType.url : TextInputType.multiline,
+              keyboardType: channel == 'url'
+                  ? TextInputType.url
+                  : TextInputType.multiline,
               autocorrect: false,
               decoration: InputDecoration(
                 alignLabelWithHint: true,
@@ -469,30 +541,44 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
                 },
                 hintText: switch (channel) {
                   'url' => 'https://example.com/path',
-                  'voice' => 'Paste the words you want checked…',
-                  'call' => 'Describe the request and any pressure or threats…',
-                  _ => 'Paste or type the message you want checked…',
+                  'voice' => 'Paste the words you want checkedâ€¦',
+                  'call' => 'Describe the request and any pressure or threatsâ€¦',
+                  _ => 'Paste or type the message you want checkedâ€¦',
                 },
               ),
             ),
-            if (channel == 'url') ValueListenableBuilder<TextEditingValue>(
-              valueListenable: content,
-              builder: (context, value, _) {
-                final uri = Uri.tryParse(value.text.trim());
-                final host = uri != null && ['https', 'http'].contains(uri.scheme) && uri.host.isNotEmpty ? uri.host : null;
-                if (host == null) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.only(top: ShieldSpace.sm),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('Domain to check', style: Theme.of(context).textTheme.labelLarge),
-                    const SizedBox(height: ShieldSpace.xs),
-                    SelectableText(host),
-                    const SizedBox(height: ShieldSpace.xs),
-                    const Text('Preview only. This link has not been opened.'),
-                  ]),
-                );
-              },
-            ),
+            if (channel == 'url')
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: content,
+                builder: (context, value, _) {
+                  final uri = Uri.tryParse(value.text.trim());
+                  final host =
+                      uri != null &&
+                          ['https', 'http'].contains(uri.scheme) &&
+                          uri.host.isNotEmpty
+                      ? uri.host
+                      : null;
+                  if (host == null) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: ShieldSpace.sm),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Domain to check',
+                          style: Theme.of(context).textTheme.labelLarge,
+                        ),
+                        const SizedBox(height: ShieldSpace.xs),
+                        SelectableText(host),
+                        const SizedBox(height: ShieldSpace.xs),
+                        const Text(
+                          'Preview only. This link has not been opened.',
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
           ],
         ),
       ),
@@ -503,7 +589,9 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
           icon: const Icon(Icons.upload_file_outlined),
           label: const Text('Import plain-text .eml instead'),
         ),
-        const Text('Email files: up to 512 KB. Attachments are inspected by filename only; they are never opened.'),
+        const Text(
+          'Email files: up to 512 KB. Attachments are inspected by filename only; they are never opened.',
+        ),
       ],
       if (channel == 'url') ...[
         SurfaceCard(
@@ -511,15 +599,30 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
           child: CheckboxListTile(
             contentPadding: const EdgeInsets.all(ShieldSpace.lg),
             value: useReputation,
-            onChanged: controlsLocked ? null : (v) => setState(() => useReputation = v!),
+            onChanged: controlsLocked
+                ? null
+                : (v) => setState(() => useReputation = v!),
             title: const Text('Include external reputation check'),
-            subtitle: const Text('Optional. If configured, send this URL to Google Safe Browsing. Its results can miss threats or flag safe links.'),
+            subtitle: const Text(
+              'Optional. If configured, send this URL to Google Safe Browsing. Its results can miss threats or flag safe links.',
+            ),
           ),
         ),
-        const Notice('Links are parsed without visiting them. HTTPS alone does not guarantee safety. Local URL checks work without external lookup consent.', icon: Icons.link),
+        const Notice(
+          'Links are parsed without visiting them. HTTPS alone does not guarantee safety. Local URL checks work without external lookup consent.',
+          icon: Icons.link,
+        ),
       ],
-      if (error != null) Notice('$error\nYour input is still here. Review it and try again.', kind: NoticeKind.error, icon: Icons.error_outline),
-      if (busy) ProcessingPanel(uploadProgress: uploading && progress < 1 ? progress : null),
+      if (error != null)
+        Notice(
+          '$error\nYour input is still here. Review it and try again.',
+          kind: NoticeKind.error,
+          icon: Icons.error_outline,
+        ),
+      if (busy)
+        ProcessingPanel(
+          uploadProgress: uploading && progress < 1 ? progress : null,
+        ),
       BusyButton(
         label: switch (channel) {
           'voice' => 'Analyze transcript',
@@ -531,7 +634,10 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
         onPressed: controlsLocked ? null : () => submit(),
         icon: Icons.shield_outlined,
       ),
-      const Notice('Raw content is processed by your backend and is not saved in history. Results can be wrong. Verify sensitive requests independently.', icon: Icons.privacy_tip_outlined),
+      const Notice(
+        'Raw content is processed by your backend and is not saved in history. Results can be wrong. Verify sensitive requests independently.',
+        icon: Icons.privacy_tip_outlined,
+      ),
     ],
   );
 }

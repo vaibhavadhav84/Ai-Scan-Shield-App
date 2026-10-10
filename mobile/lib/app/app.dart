@@ -46,30 +46,58 @@ final routerProvider = Provider<GoRouter>((ref) {
               : null,
         ),
       ),
-      ShellRoute(
-        builder: (context, state, child) =>
-            AppShell(location: state.uri.path, child: child),
-        routes: [
-          GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
-          GoRoute(
-            path: '/scan',
-            builder: (_, state) => ScanScreen(
-              key: ValueKey(state.uri.queryParameters['channel']),
-              initialChannel:
-                  [
-                    'sms',
-                    'email',
-                    'url',
-                    'voice',
-                    'call',
-                  ].contains(state.uri.queryParameters['channel'])
-                  ? state.uri.queryParameters['channel']!
-                  : 'sms',
-            ),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            AppShell(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
+            ],
           ),
-          GoRoute(path: '/history', builder: (_, _) => const HistoryScreen()),
-          GoRoute(path: '/reports', builder: (_, _) => const ReportsScreen()),
-          GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/scan',
+                builder: (_, state) => ScanScreen(
+                  initialChannel:
+                      [
+                        'sms',
+                        'email',
+                        'url',
+                        'voice',
+                        'call',
+                      ].contains(state.uri.queryParameters['channel'])
+                      ? state.uri.queryParameters['channel']!
+                      : 'sms',
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/history',
+                builder: (_, _) => const HistoryScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/reports',
+                builder: (_, _) => const ReportsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/profile',
+                builder: (_, _) => const ProfileScreen(),
+              ),
+            ],
+          ),
         ],
       ),
     ],
@@ -86,45 +114,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   return router;
 });
 
-ThemeData appTheme(Brightness brightness) {
-  final dark = brightness == Brightness.dark;
-  final colors = ColorScheme.fromSeed(
-    seedColor: const Color(0xff2478f5),
-    brightness: brightness,
-  );
-  return ThemeData(
-    useMaterial3: true,
-    colorScheme: colors,
-    scaffoldBackgroundColor: dark
-        ? const Color(0xff0b1526)
-        : const Color(0xfff4f7fc),
-    appBarTheme: AppBarTheme(
-      backgroundColor: dark ? const Color(0xff0b1526) : const Color(0xfff4f7fc),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-      contentPadding: const EdgeInsets.all(16),
-    ),
-    filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        minimumSize: const Size(48, 52),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      ),
-    ),
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
-    ),
-    textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-    ),
-    cardTheme: CardThemeData(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-    ),
-  );
-}
+ThemeData appTheme(Brightness brightness) => shieldTheme(brightness);
 
 class ShieldApp extends ConsumerWidget {
   const ShieldApp({super.key});
@@ -139,40 +129,90 @@ class ShieldApp extends ConsumerWidget {
   );
 }
 
-class AppShell extends StatelessWidget {
-  const AppShell({super.key, required this.location, required this.child});
-  final String location;
-  final Widget child;
-  static const routes = ['/home', '/scan', '/history', '/reports', '/profile'];
+class AppShell extends StatefulWidget {
+  const AppShell({super.key, required this.navigationShell});
+  final StatefulNavigationShell navigationShell;
+  @override
+  State<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<AppShell> {
+  int refresh = 0;
+  @override
+  void didUpdateWidget(AppShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    refresh++;
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
       title: const Brand(),
       actions: [
         IconButton(
+          tooltip: 'Security alerts',
+          onPressed: () => context.push('/alerts'),
+          icon: const Icon(Icons.notifications_none_rounded),
+        ),
+        IconButton(
           tooltip: 'Help',
           onPressed: () => context.push('/help'),
-          icon: const Icon(Icons.help_outline),
+          icon: const Icon(Icons.help_outline_rounded),
         ),
       ],
     ),
-    body: child,
-    bottomNavigationBar: NavigationBar(
-      selectedIndex: routes.indexOf(location).clamp(0, 4),
-      onDestinationSelected: (index) => context.go(routes[index]),
-      destinations: const [
-        NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
-        NavigationDestination(icon: Icon(Icons.shield_outlined), label: 'Scan'),
-        NavigationDestination(icon: Icon(Icons.history), label: 'History'),
-        NavigationDestination(
-          icon: Icon(Icons.flag_outlined),
-          label: 'Reports',
+    body: ViewRefreshScope(
+      revision: refresh,
+      activeIndex: widget.navigationShell.currentIndex,
+      child: widget.navigationShell,
+    ),
+    bottomNavigationBar: DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
         ),
-        NavigationDestination(
-          icon: Icon(Icons.person_outline),
-          label: 'Profile',
-        ),
-      ],
+      ),
+      child: NavigationBar(
+        selectedIndex: widget.navigationShell.currentIndex,
+        labelBehavior: MediaQuery.textScalerOf(context).scale(14) > 20
+            ? NavigationDestinationLabelBehavior.alwaysHide
+            : NavigationDestinationLabelBehavior.alwaysShow,
+        onDestinationSelected: (index) {
+          setState(() => refresh++);
+          widget.navigationShell.goBranch(index);
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home_rounded),
+            label: 'Home',
+            tooltip: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.shield_outlined),
+            selectedIcon: Icon(Icons.shield_rounded),
+            label: 'Scan',
+            tooltip: 'Scan',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.history_rounded),
+            label: 'History',
+            tooltip: 'History',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.flag_outlined),
+            selectedIcon: Icon(Icons.flag_rounded),
+            label: 'Reports',
+            tooltip: 'Reports',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline_rounded),
+            selectedIcon: Icon(Icons.person_rounded),
+            label: 'Profile',
+            tooltip: 'Profile',
+          ),
+        ],
+      ),
     ),
   );
 }

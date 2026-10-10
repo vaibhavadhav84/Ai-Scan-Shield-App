@@ -36,7 +36,7 @@ void main() {
     await tester.tap(find.text('Get started'));
     await tester.pumpAndSettle();
     expect(find.text('Welcome back'), findsOneWidget);
-    expect(find.text('Email'), findsOneWidget);
+    expect(find.text('Email address'), findsOneWidget);
   });
   testWidgets('result label conveys risk without color', (tester) async {
     final semantics = tester.ensureSemantics();
@@ -45,7 +45,7 @@ void main() {
         MaterialApp(home: Scaffold(body: RiskBadge('High Risk'))),
       );
       expect(find.text('High Risk'), findsOneWidget);
-      expect(find.byIcon(Icons.warning_amber), findsOneWidget);
+      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
       await expectLater(tester, meetsGuideline(textContrastGuideline));
     } finally {
       semantics.dispose();
@@ -64,6 +64,6 @@ void main() {
     await tester.tap(find.text('Privacy, terms & help'));
     await tester.pumpAndSettle();
     expect(find.text('Help & privacy'), findsOneWidget);
-    expect(find.text('Terms — owner review required'), findsOneWidget);
+    expect(find.text('Terms & service limitations'), findsOneWidget);
   });
 }
