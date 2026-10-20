@@ -15,7 +15,9 @@ def test_migration_upgrade_downgrade(tmp_path, monkeypatch):
 
     database = tmp_path / "migration.db"
     monkeypatch.setattr(settings(), "database_url", f"sqlite:///{database.as_posix()}")
-    config = Config("alembic.ini")
+    ini_path = Path(__file__).resolve().parents[1] / "alembic.ini"
+    config = Config(str(ini_path))
+    config.set_main_option("script_location", str(ini_path.parent / "migrations"))
     command.upgrade(config, "head")
     engine = create_engine(settings().database_url)
     assert {"users", "scans", "reports", "sessions", "rate_buckets"} <= set(

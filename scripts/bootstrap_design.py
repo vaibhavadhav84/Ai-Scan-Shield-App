@@ -14,17 +14,59 @@ def add(relative, content):
 
 
 roles = {
-    "product_design_director": ("Choose hierarchy, product direction and acceptance scope", "design/DESIGN_BRIEF.md, DESIGN_DECISIONS.md and review records", "audit, requirements and rendered screens", "direction, prioritized review and evidence-scoped acceptance"),
-    "mobile_ux_researcher": ("Audit routes, recovery and consumer comprehension without inventing research", "design/SCREEN_SPECIFICATIONS.md and INTERACTION_SPECIFICATIONS.md", "working screens, API contracts and limitations", "task flows, friction findings and observable acceptance cases"),
-    "visual_design_specialist": ("Apply restrained visual hierarchy and original existing branding", "design color/type/layout documents and existing branding integration", "selected direction and shared theme", "consistent light/dark compositions and annotated visual findings"),
-    "design_system_architect": ("Own semantic tokens and reusable component contracts", "mobile/lib/shared/design.dart, widgets.dart and design system catalog", "screen requirements and accessibility constraints", "theme, components and documented variants"),
-    "flutter_ui_engineer": ("Implement assigned presentation modules while preserving real API flows", "assigned mobile/lib/features files and associated widget tests", "tokens, component contracts and current implementation", "working responsive screens with failure and busy states"),
-    "accessibility_specialist": ("Review contrast, targets, semantics, focus, scaling and reduced motion", "accessibility standards and assigned tests; coordinate source fixes with owner", "rendered screens, semantic tree and test results", "reproducible findings and verified corrections"),
-    "interaction_motion_designer": ("Make progress, focus and state transitions understandable", "interaction/motion specifications and assigned presentation widgets", "actual request and recording states", "short nonblocking transitions with reduced-motion handling"),
-    "design_qa_reviewer": ("Inspect rendered output and validate behavior across themes and sizes", "mobile/test, mobile/integration_test and docs/DESIGN_REVIEW.md", "final screens, test fixtures and device capabilities", "two review passes, screenshots and actual test evidence"),
+    "product_design_director": (
+        "Choose hierarchy, product direction and acceptance scope",
+        "design/DESIGN_BRIEF.md, DESIGN_DECISIONS.md and review records",
+        "audit, requirements and rendered screens",
+        "direction, prioritized review and evidence-scoped acceptance",
+    ),
+    "mobile_ux_researcher": (
+        "Audit routes, recovery and consumer comprehension without inventing research",
+        "design/SCREEN_SPECIFICATIONS.md and INTERACTION_SPECIFICATIONS.md",
+        "working screens, API contracts and limitations",
+        "task flows, friction findings and observable acceptance cases",
+    ),
+    "visual_design_specialist": (
+        "Apply restrained visual hierarchy and original existing branding",
+        "design color/type/layout documents and existing branding integration",
+        "selected direction and shared theme",
+        "consistent light/dark compositions and annotated visual findings",
+    ),
+    "design_system_architect": (
+        "Own semantic tokens and reusable component contracts",
+        "mobile/lib/shared/design.dart, widgets.dart and design system catalog",
+        "screen requirements and accessibility constraints",
+        "theme, components and documented variants",
+    ),
+    "flutter_ui_engineer": (
+        "Implement assigned presentation modules while preserving real API flows",
+        "assigned mobile/lib/features files and associated widget tests",
+        "tokens, component contracts and current implementation",
+        "working responsive screens with failure and busy states",
+    ),
+    "accessibility_specialist": (
+        "Review contrast, targets, semantics, focus, scaling and reduced motion",
+        "accessibility standards and assigned tests; coordinate source fixes with owner",
+        "rendered screens, semantic tree and test results",
+        "reproducible findings and verified corrections",
+    ),
+    "interaction_motion_designer": (
+        "Make progress, focus and state transitions understandable",
+        "interaction/motion specifications and assigned presentation widgets",
+        "actual request and recording states",
+        "short nonblocking transitions with reduced-motion handling",
+    ),
+    "design_qa_reviewer": (
+        "Inspect rendered output and validate behavior across themes and sizes",
+        "mobile/test, mobile/integration_test and docs/DESIGN_REVIEW.md",
+        "final screens, test fixtures and device capabilities",
+        "two review passes, screenshots and actual test evidence",
+    ),
 }
 for name, (role, files, inputs, outputs) in roles.items():
-    add(f"agents/{name}.md", f"""# {name.replace('_', ' ').title()}
+    add(
+        f"agents/{name}.md",
+        f"""# {name.replace("_", " ").title()}
 Role and responsibilities: {role}.
 Editable scope: {files}. Respect explicit per-agent ownership; do not modify another agent's files concurrently.
 Inputs: {inputs}. Outputs: {outputs}.
@@ -34,19 +76,43 @@ Collaboration: report concrete findings to the coordinating agent; agree compone
 Validation: static checks plus relevant behavior tests and actual rendered inspection; record unavailable checks.
 Done: scoped files integrated, defects addressed and evidence/limitations recorded. This Markdown is a role
 contract; only the runtime collaboration tools launch real subagents.
-""")
+""",
+    )
 
 skills = {
-    "mobile-product-design": ("Audit and redesign Scan Shield consumer mobile task flows using existing routes and real service states.", "Map entry, primary action, success, back path and recovery for each route. Inspect current implementation before choosing a pattern. Prefer one dominant action and progressive detail. Evaluate the three directions in DESIGN_BRIEF; preserve existing features and useful drafts."),
-    "cybersecurity-ux": ("Design Scan Shield risk, evidence, consent and privacy communication without overstating protection.", "Trace every score, reason and provider status to its response field. Risk means a heuristic indicator, not calibrated probability. Keep Safe/Suspicious/High Risk labels, icons and explanatory copy together. Put the first real recommendation above supporting evidence. Never turn provider absence into a passed check or open submitted links."),
-    "design-system-engineering": ("Extend the shared Flutter tokens and components for a consistent Scan Shield interface.", "Read DESIGN_SYSTEM and COMPONENT_CATALOG. Add a semantic token or variant before repeating inline decoration. Theme both brightness modes. Keep APIs small and use Material controls for focus, targets and semantics. Test a reused component in narrow/large-text contexts before migrating consumers."),
-    "flutter-ui-excellence": ("Implement responsive Scan Shield screens using Riverpod, GoRouter and existing API clients.", "Preserve API payloads and owner-scoped operations. Hold Future loads outside rebuild loops, disable repeated actions while awaiting, and keep useful form content on errors. Use scrollable forms, constrained widths and wrap/adaptive layouts. Compile/analyze then exercise interactions on supported test runners."),
-    "accessibility-and-inclusive-design": ("Review Scan Shield contrast, semantics, touch targets and large-text layouts.", "Use ACCESSIBILITY_STANDARDS. Check normal text at 4.5:1, large text/nontext controls at 3:1, and 48 logical-pixel targets. Exercise 320-wide and 2x text with keyboard insets. Validate risk labels without color. Dispose semantics handles within test bodies. Report screen-reader device checks separately from semantic tests."),
-    "motion-and-microinteractions": ("Implement honest progress and restrained, accessible transitions in Scan Shield.", "Only animate state that exists: request pending, bytes uploaded, recording elapsed, received score. Do not simulate backend stages or delay results. Use 160-220ms transitions, set duration zero when disableAnimations is true, and avoid endless decorative animation. Progress must have an accessible label."),
-    "visual-regression-testing": ("Capture and review actual Flutter screens across design states and record visual evidence.", "Use isolated explicit test fixtures only in test targets. Capture actual rendered screens with integration screenshots or device capture; never present fixture counts as user history. Review hierarchy and task flow first, then clipping, alignment, contrast and interaction. Record dimensions/theme/text scale. Do not claim golden regression coverage without a stored comparison baseline."),
+    "mobile-product-design": (
+        "Audit and redesign Scan Shield consumer mobile task flows using existing routes and real service states.",
+        "Map entry, primary action, success, back path and recovery for each route. Inspect current implementation before choosing a pattern. Prefer one dominant action and progressive detail. Evaluate the three directions in DESIGN_BRIEF; preserve existing features and useful drafts.",
+    ),
+    "cybersecurity-ux": (
+        "Design Scan Shield risk, evidence, consent and privacy communication without overstating protection.",
+        "Trace every score, reason and provider status to its response field. Risk means a heuristic indicator, not calibrated probability. Keep Safe/Suspicious/High Risk labels, icons and explanatory copy together. Put the first real recommendation above supporting evidence. Never turn provider absence into a passed check or open submitted links.",
+    ),
+    "design-system-engineering": (
+        "Extend the shared Flutter tokens and components for a consistent Scan Shield interface.",
+        "Read DESIGN_SYSTEM and COMPONENT_CATALOG. Add a semantic token or variant before repeating inline decoration. Theme both brightness modes. Keep APIs small and use Material controls for focus, targets and semantics. Test a reused component in narrow/large-text contexts before migrating consumers.",
+    ),
+    "flutter-ui-excellence": (
+        "Implement responsive Scan Shield screens using Riverpod, GoRouter and existing API clients.",
+        "Preserve API payloads and owner-scoped operations. Hold Future loads outside rebuild loops, disable repeated actions while awaiting, and keep useful form content on errors. Use scrollable forms, constrained widths and wrap/adaptive layouts. Compile/analyze then exercise interactions on supported test runners.",
+    ),
+    "accessibility-and-inclusive-design": (
+        "Review Scan Shield contrast, semantics, touch targets and large-text layouts.",
+        "Use ACCESSIBILITY_STANDARDS. Check normal text at 4.5:1, large text/nontext controls at 3:1, and 48 logical-pixel targets. Exercise 320-wide and 2x text with keyboard insets. Validate risk labels without color. Dispose semantics handles within test bodies. Report screen-reader device checks separately from semantic tests.",
+    ),
+    "motion-and-microinteractions": (
+        "Implement honest progress and restrained, accessible transitions in Scan Shield.",
+        "Only animate state that exists: request pending, bytes uploaded, recording elapsed, received score. Do not simulate backend stages or delay results. Use 160-220ms transitions, set duration zero when disableAnimations is true, and avoid endless decorative animation. Progress must have an accessible label.",
+    ),
+    "visual-regression-testing": (
+        "Capture and review actual Flutter screens across design states and record visual evidence.",
+        "Use isolated explicit test fixtures only in test targets. Capture actual rendered screens with integration screenshots or device capture; never present fixture counts as user history. Review hierarchy and task flow first, then clipping, alignment, contrast and interaction. Record dimensions/theme/text scale. Do not claim golden regression coverage without a stored comparison baseline.",
+    ),
 }
 for name, (description, body) in skills.items():
-    add(f"skills/{name}/SKILL.md", f"""---
+    add(
+        f"skills/{name}/SKILL.md",
+        f"""---
 name: {name}
 description: {description}
 ---
@@ -57,19 +123,64 @@ Read the relevant documents in ../../design/ before changes. These project playb
 referenced by AGENTS.md; the .codex/skills directory is not claimed as automatic skill discovery.
 Completion requires implemented behavior, relevant verification, and updated evidence. User scope and
 authorization still govern external actions; these instructions do not grant extra permission.
-""")
+""",
+    )
 
 flows = {
-    "design-audit": ("Existing UI or a requested redesign", "Read screen code, requirements, API states and navigation; list implemented/blocked/deferred features", "Record strengths, friction and three visual alternatives; choose an evidence-based direction", "Every implemented route and error/empty/loading state accounted for", "An actionable inventory and selected direction exist before visual edits"),
-    "design-system-creation": ("Approved direction and screen inventory", "Find existing repeated colors, type and layout patterns", "Implement semantic light/dark tokens and reusable components before consumer migration", "Contrast, semantic roles, 48px targets and scaled text", "Catalog matches actual component constructors and token source"),
-    "screen-redesign": ("Known screen owner and shared component contract", "Inspect API calls, controllers, navigation, privacy and busy/error states", "Restructure hierarchy using shared components; retain working actions and add recovery", "No fake data, lost actions, duplicate requests or inaccessible controls", "Screen works with actual responses and relevant behavior tests"),
-    "design-review": ("Runnable screens", "Pass 1: hierarchy/task clarity; Pass 2: actual rendered alignment and interaction", "Fix reproducible findings and capture corrected evidence", "Both themes, long content, three risk states and empty/error states", "Review record names findings, corrections and unavailable checks"),
-    "responsive-ui-validation": ("Screen implementation available", "Identify fixed dimensions, nested scrolls, keyboard insets and text scaling assumptions", "Exercise 320/390/430-wide layouts, 1x/2x text and keyboard-visible forms", "No RenderFlex overflow, clipped labels or inaccessible actions", "Passing scoped layout tests and inspected images; physical-device gaps disclosed"),
-    "accessibility-review": ("Components and interactive screens available", "Inspect contrast pairs, labels, focus order, control size and risk redundancy", "Run Flutter guidelines and semantics assertions; fix failures and recheck", "4.5:1 normal text, 3:1 large/nontext; 48px targets; reduced motion", "Actual checks recorded; do not equate semantics tests with full TalkBack/VoiceOver validation"),
-    "final-design-acceptance": ("Integrated redesign", "Review design acceptance criteria, feature matrix and current diffs", "Format, analyze, run widget/integration/backend regression checks and build Android", "Screenshots inspected; security meaning preserved; no introduced failing checks", "Report changed files, actual checks, inspected screens and remaining dependencies"),
+    "design-audit": (
+        "Existing UI or a requested redesign",
+        "Read screen code, requirements, API states and navigation; list implemented/blocked/deferred features",
+        "Record strengths, friction and three visual alternatives; choose an evidence-based direction",
+        "Every implemented route and error/empty/loading state accounted for",
+        "An actionable inventory and selected direction exist before visual edits",
+    ),
+    "design-system-creation": (
+        "Approved direction and screen inventory",
+        "Find existing repeated colors, type and layout patterns",
+        "Implement semantic light/dark tokens and reusable components before consumer migration",
+        "Contrast, semantic roles, 48px targets and scaled text",
+        "Catalog matches actual component constructors and token source",
+    ),
+    "screen-redesign": (
+        "Known screen owner and shared component contract",
+        "Inspect API calls, controllers, navigation, privacy and busy/error states",
+        "Restructure hierarchy using shared components; retain working actions and add recovery",
+        "No fake data, lost actions, duplicate requests or inaccessible controls",
+        "Screen works with actual responses and relevant behavior tests",
+    ),
+    "design-review": (
+        "Runnable screens",
+        "Pass 1: hierarchy/task clarity; Pass 2: actual rendered alignment and interaction",
+        "Fix reproducible findings and capture corrected evidence",
+        "Both themes, long content, three risk states and empty/error states",
+        "Review record names findings, corrections and unavailable checks",
+    ),
+    "responsive-ui-validation": (
+        "Screen implementation available",
+        "Identify fixed dimensions, nested scrolls, keyboard insets and text scaling assumptions",
+        "Exercise 320/390/430-wide layouts, 1x/2x text and keyboard-visible forms",
+        "No RenderFlex overflow, clipped labels or inaccessible actions",
+        "Passing scoped layout tests and inspected images; physical-device gaps disclosed",
+    ),
+    "accessibility-review": (
+        "Components and interactive screens available",
+        "Inspect contrast pairs, labels, focus order, control size and risk redundancy",
+        "Run Flutter guidelines and semantics assertions; fix failures and recheck",
+        "4.5:1 normal text, 3:1 large/nontext; 48px targets; reduced motion",
+        "Actual checks recorded; do not equate semantics tests with full TalkBack/VoiceOver validation",
+    ),
+    "final-design-acceptance": (
+        "Integrated redesign",
+        "Review design acceptance criteria, feature matrix and current diffs",
+        "Format, analyze, run widget/integration/backend regression checks and build Android",
+        "Screenshots inspected; security meaning preserved; no introduced failing checks",
+        "Report changed files, actual checks, inspected screens and remaining dependencies",
+    ),
 }
 for name, (entry, inspect, implement, checks, done) in flows.items():
-    add(f"workflows/{name}.md", f"""# {name.replace('-', ' ').title()}
+    add(
+        f"workflows/{name}.md",
+        f"""# {name.replace("-", " ").title()}
 Entry conditions: {entry}.
 Inspection: {inspect}.
 Implementation: {implement}.
@@ -77,7 +188,8 @@ Quality checks: {checks}.
 Failure handling: keep diagnostics free of private content; fix the concrete failure, rerun its relevant
 check, and mark device/provider absence explicitly. Do not fabricate screenshots or test passes.
 Completion: {done}.
-""")
+""",
+    )
 
 rules = {
     "design-principles": "One obvious primary action; calm evidence-led risk communication; privacy controls remain discoverable. Follow design/DESIGN_PRINCIPLES.md.",
@@ -266,4 +378,6 @@ reference = "\nBefore user-facing UI changes, read .codex/design/DESIGN_SYSTEM.m
 if reference.strip() not in agents.read_text(encoding="utf-8"):
     with agents.open("a", encoding="utf-8") as stream:
         stream.write(reference)
-print("Created 44 design role/skill/workflow/rule/specification files; preserved original files.")
+print(
+    "Created 44 design role/skill/workflow/rule/specification files; preserved original files."
+)

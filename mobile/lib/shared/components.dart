@@ -692,7 +692,9 @@ class _ApiPanelState extends State<ApiPanel> {
             title: 'Couldn’t load this information',
             body: errorMessage(snap.error!),
             actionLabel: 'Retry',
-            onAction: () => setState(() => data = widget.load()),
+            onAction: () => setState(() {
+              data = widget.load();
+            }),
           ),
         );
       }

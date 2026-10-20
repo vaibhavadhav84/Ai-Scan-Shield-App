@@ -1,15 +1,25 @@
 """Apply the coordinated theme/navigation integration to existing app entry points."""
+
 from pathlib import Path
 
-path = Path(__file__).resolve().parents[1] / 'mobile/lib/app/app.dart'
-source = path.read_text(encoding='utf-8')
-start = source.index('ThemeData appTheme(')
-end = source.index('class ShieldApp', start)
-source = source[:start] + 'ThemeData appTheme(Brightness brightness) => shieldTheme(brightness);\n\n' + source[end:]
-source = source.replace('ShellRoute(\n        builder: (context, state, child) =>\n            AppShell(location: state.uri.path, child: child),\n        routes: [', 'StatefulShellRoute.indexedStack(\n        builder: (context, state, navigationShell) => AppShell(navigationShell: navigationShell),\n        branches: [')
-start = source.index('        branches: [')
-end = source.index('\n      ),\n    ],', start)
-source = source[:start] + '''        branches: [
+path = Path(__file__).resolve().parents[1] / "mobile/lib/app/app.dart"
+source = path.read_text(encoding="utf-8")
+start = source.index("ThemeData appTheme(")
+end = source.index("class ShieldApp", start)
+source = (
+    source[:start]
+    + "ThemeData appTheme(Brightness brightness) => shieldTheme(brightness);\n\n"
+    + source[end:]
+)
+source = source.replace(
+    "ShellRoute(\n        builder: (context, state, child) =>\n            AppShell(location: state.uri.path, child: child),\n        routes: [",
+    "StatefulShellRoute.indexedStack(\n        builder: (context, state, navigationShell) => AppShell(navigationShell: navigationShell),\n        branches: [",
+)
+start = source.index("        branches: [")
+end = source.index("\n      ),\n    ],", start)
+source = (
+    source[:start]
+    + """        branches: [
           StatefulShellBranch(routes: [GoRoute(path: '/home', builder: (_, _) => const HomeScreen())]),
           StatefulShellBranch(routes: [GoRoute(path: '/scan', builder: (_, state) => ScanScreen(
             initialChannel: ['sms', 'email', 'url', 'voice', 'call'].contains(state.uri.queryParameters['channel']) ? state.uri.queryParameters['channel']! : 'sms',
@@ -17,9 +27,13 @@ source = source[:start] + '''        branches: [
           StatefulShellBranch(routes: [GoRoute(path: '/history', builder: (_, _) => const HistoryScreen())]),
           StatefulShellBranch(routes: [GoRoute(path: '/reports', builder: (_, _) => const ReportsScreen())]),
           StatefulShellBranch(routes: [GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen())]),
-        ],''' + source[end:]
-start = source.index('class AppShell')
-source = source[:start] + '''class AppShell extends StatefulWidget {
+        ],"""
+    + source[end:]
+)
+start = source.index("class AppShell")
+source = (
+    source[:start]
+    + """class AppShell extends StatefulWidget {
   const AppShell({super.key, required this.navigationShell});
   final StatefulNavigationShell navigationShell;
   @override
@@ -60,5 +74,6 @@ class _AppShellState extends State<AppShell> {
     ),
   );
 }
-'''
-path.write_text(source, encoding='utf-8')
+"""
+)
+path.write_text(source, encoding="utf-8")
