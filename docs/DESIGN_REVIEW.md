@@ -1,4 +1,4 @@
-# Scan Shield design review — 2026-10-10
+# Scan Shield design review — started 2026-10-10, continued 2026-10-20
 
 Direction: **Quiet Security**, with approachable channel actions and evidence-led results.
 The three alternatives and internal comparison are in `.codex/design/DESIGN_BRIEF.md`.
@@ -22,7 +22,15 @@ Changes integrated:
 - Branded loading, empty, error and success treatments, with no production fixtures or fabricated progress.
 
 The initial formatting pass exposed eight legacy-encoded source bytes in the scan screen; these were
-normalized to UTF-8. Analyzer findings are being resolved before final acceptance.
+normalized to UTF-8. Flutter analysis passes after the interaction corrections.
+
+Follow-up corrections on October 20:
+- Incoming shared text asks before replacing a nonempty SMS draft.
+- Recording observes route coverage and app lifecycle; a late permission result cannot start it offscreen.
+- Recovery navigation preserves the entered email and clears password input.
+- Account deletion shows a required-password error and gives the dialog ownership of its controller.
+- Retry immediately shows pending state instead of retaining the previous error button.
+- Timeout and oversized-file errors give specific recovery guidance.
 
 ## Pass 2 — Rendered quality and interaction
 
@@ -32,8 +40,12 @@ Rendered inspection, corrective changes and final test counts will be recorded h
 
 ## Verification scope
 
-Backend regression: **51 passed**, one existing Starlette/httpx deprecation warning.
-Flutter screen/layout/accessibility suite and real-backend Android journey: running; no pass claimed yet.
+Backend regression on October 20: **51 passed**, one existing Starlette/httpx deprecation warning.
+Flutter analyzer: **no issues found**. The first Android run passed the real-backend journey and four
+existing app checks, then stalled in the native Android screenshot callback. That run was stopped.
+The harness now uses Flutter's actual RepaintBoundary render output at the requested test viewport,
+transferred through the integration driver. It does not capture Android system bars or native dialogs.
+The full screen/layout/accessibility suite is rerunning; no complete-suite pass is claimed yet.
 New design skill manifests: validation recorded separately at finalization.
 
 Physical devices, iOS/macOS, live SMTP/reputation/speech providers, TalkBack and VoiceOver are separate

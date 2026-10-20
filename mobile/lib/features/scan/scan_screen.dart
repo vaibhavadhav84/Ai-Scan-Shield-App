@@ -35,6 +35,17 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
   final recorder = AudioRecorder();
   final player = AudioPlayer();
   late final Api sessionApi;
+  GoRouter? routeObserver;
+  bool sharePending = false;
+  bool foreground = true;
+  bool get scanVisible =>
+      mounted &&
+      foreground &&
+      (ViewRefreshScope.of(context)?.activeIndex ?? 1) == 1 &&
+      (ViewRefreshScope.of(context) == null ||
+          routeObserver?.routerDelegate.currentConfiguration.uri.path ==
+              '/scan') &&
+      (ModalRoute.of(context)?.isCurrent ?? false);
   bool busy = false, recording = false, recordingBusy = false;
   bool uploading = false;
   String? audioPath, error;
@@ -67,6 +78,13 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final router = GoRouter.of(context);
+    if (routeObserver != router) {
+      routeObserver?.routerDelegate.removeListener(_routeChanged);
+      routeObserver = router;
+      router.routerDelegate.addListener(_routeChanged);
+    }
+    _routeChanged();
     final active = ViewRefreshScope.of(context)?.activeIndex;
     if (active != null && active != 1 && recording && !recordingBusy) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -75,19 +93,50 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
     }
   }
 
+  void _routeChanged() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!scanVisible && recording && !recordingBusy) toggleRecord();
+      if (scanVisible) _receiveShare();
+    });
+  }
+
   void _receiveShare() {
-    if (busy || recording || recordingBusy) return;
-    final value = ref.read(apiProvider).consumeSharedText();
-    if (value != null && mounted) {
-      setState(() {
-        channel = 'sms';
-        content.text = value;
-      });
-    }
+    if (busy || recording || recordingBusy || sharePending) return;
+    sharePending = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        if (!mounted || !scanVisible || busy || recording || recordingBusy) {
+          return;
+        }
+        final value = sessionApi.consumeSharedText();
+        if (value == null) return;
+        final draft = drafts['sms']!;
+        if (draft.text.isNotEmpty && draft.text != value) {
+          final replace = await confirm(
+            context,
+            'Replace SMS draft?',
+            'Shared text will replace the SMS draft currently on this device.',
+            confirmLabel: 'Replace draft',
+          );
+          if (!replace || !mounted) return;
+        }
+        setState(() {
+          channel = 'sms';
+          draft.text = value;
+        });
+      } finally {
+        sharePending = false;
+        if (mounted && scanVisible && sessionApi.sharedText != null) {
+          _receiveShare();
+        }
+      }
+    });
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    foreground = state == AppLifecycleState.resumed;
     if (recording && state != AppLifecycleState.resumed) toggleRecord();
   }
 
@@ -95,6 +144,7 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     sessionApi.changed.removeListener(_receiveShare);
+    routeObserver?.routerDelegate.removeListener(_routeChanged);
     timer?.cancel();
     recorder.dispose();
     player.dispose();
@@ -239,7 +289,7 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
           'Record only with consent. Recording stays on this device until you submit it. '
               'It stops after three minutes. This does not record phone calls.',
         );
-        if (!agreed) return;
+        if (!agreed || !mounted || !scanVisible) return;
         if (!await recorder.hasPermission()) {
           if (mounted) {
             setState(
@@ -250,6 +300,7 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
           return;
         }
         final folder = await getTemporaryDirectory();
+        if (!mounted || !scanVisible) return;
         final old = audioPath;
         if (old != null && await File(old).exists()) await File(old).delete();
         final file =
@@ -262,6 +313,12 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
           ),
           path: file,
         );
+        if (!mounted || !scanVisible) {
+          await recorder.stop();
+          final abandoned = File(file);
+          if (await abandoned.exists()) await abandoned.delete();
+          return;
+        }
         elapsed.reset();
         elapsed.start();
         if (mounted) {
@@ -282,7 +339,10 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
     } catch (e) {
       if (mounted) setState(() => error = errorMessage(e));
     } finally {
-      if (mounted) setState(() => recordingBusy = false);
+      if (mounted) {
+        setState(() => recordingBusy = false);
+        _receiveShare();
+      }
     }
   }
 
@@ -330,6 +390,7 @@ class _ScanState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
   Widget emailMetadata() => SurfaceCard(
     padding: EdgeInsets.zero,
     child: ExpansionTile(
+      key: const PageStorageKey('email-metadata'),
       leading: const Icon(Icons.alternate_email),
       title: const Text('Email details'),
       subtitle: const Text('Optional sender, reply-to and subject'),

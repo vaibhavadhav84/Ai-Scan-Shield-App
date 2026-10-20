@@ -35,72 +35,16 @@ class _ProfileState extends ConsumerState<ProfileScreen> {
     bool secret = false,
     String? explanation,
   }) async {
-    final controller = TextEditingController(text: initial);
-    bool visible = false;
-    final result = await showDialog<String>(
+    return showDialog<String>(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, update) => AlertDialog(
-          title: Text(title),
-          scrollable: true,
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (explanation != null) ...[
-                Text(explanation),
-                const SizedBox(height: 16),
-              ],
-              TextField(
-                controller: controller,
-                autofocus: true,
-                obscureText: secret && !visible,
-                maxLength: secret ? null : 80,
-                autocorrect: !secret,
-                enableSuggestions: !secret,
-                decoration: InputDecoration(
-                  labelText: label,
-                  suffixIcon: secret
-                      ? IconButton(
-                          tooltip: visible ? 'Hide password' : 'Show password',
-                          onPressed: () => update(() => visible = !visible),
-                          icon: Icon(
-                            visible
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
-                          ),
-                        )
-                      : null,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              style: secret
-                  ? FilledButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.error,
-                      foregroundColor: Theme.of(context).colorScheme.onError,
-                    )
-                  : null,
-              onPressed: () {
-                if (!secret || controller.text.isNotEmpty) {
-                  Navigator.pop(dialogContext, controller.text);
-                }
-              },
-              child: Text(secret ? 'Delete account' : 'Save name'),
-            ),
-          ],
-        ),
+      builder: (_) => _ProfileTextDialog(
+        title: title,
+        label: label,
+        initial: initial,
+        secret: secret,
+        explanation: explanation,
       ),
     );
-    // Let the closing route finish reading the field before disposing it.
-    WidgetsBinding.instance.addPostFrameCallback((_) => controller.dispose());
-    return result;
   }
 
   Future<void> updateUser(
@@ -423,6 +367,97 @@ class _ProfileState extends ConsumerState<ProfileScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ProfileTextDialog extends StatefulWidget {
+  const _ProfileTextDialog({
+    required this.title,
+    required this.label,
+    required this.initial,
+    required this.secret,
+    this.explanation,
+  });
+  final String title, label, initial;
+  final bool secret;
+  final String? explanation;
+  @override
+  State<_ProfileTextDialog> createState() => _ProfileTextDialogState();
+}
+
+class _ProfileTextDialogState extends State<_ProfileTextDialog> {
+  late final controller = TextEditingController(text: widget.initial);
+  bool visible = false, invalid = false;
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final title = widget.title, label = widget.label;
+    final secret = widget.secret;
+    final explanation = widget.explanation;
+    return AlertDialog(
+      title: Text(title),
+      scrollable: true,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (explanation != null) ...[
+            Text(explanation),
+            const SizedBox(height: 16),
+          ],
+          TextField(
+            controller: controller,
+            autofocus: true,
+            obscureText: secret && !visible,
+            maxLength: secret ? null : 80,
+            autocorrect: !secret,
+            enableSuggestions: !secret,
+            decoration: InputDecoration(
+              labelText: label,
+              errorText: invalid ? 'Enter your password.' : null,
+              suffixIcon: secret
+                  ? IconButton(
+                      tooltip: visible ? 'Hide password' : 'Show password',
+                      onPressed: () => setState(() => visible = !visible),
+                      icon: Icon(
+                        visible
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                      ),
+                    )
+                  : null,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          style: secret
+              ? FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
+                )
+              : null,
+          onPressed: () {
+            if (!secret || controller.text.isNotEmpty) {
+              Navigator.pop(context, controller.text);
+            } else {
+              setState(() => invalid = true);
+            }
+          },
+          child: Text(secret ? 'Delete account' : 'Save name'),
+        ),
+      ],
     );
   }
 }

@@ -139,6 +139,7 @@ class _ResultState extends ConsumerState<ResultScreen> {
               SurfaceCard(
                 padding: EdgeInsets.zero,
                 child: ExpansionTile(
+                  key: const PageStorageKey('result-limitations'),
                   title: const Text('Analysis limitations'),
                   subtitle: const Text(
                     'Understand the boundaries of this result',
@@ -158,6 +159,7 @@ class _ResultState extends ConsumerState<ResultScreen> {
                 SurfaceCard(
                   padding: EdgeInsets.zero,
                   child: ExpansionTile(
+                    key: const PageStorageKey('result-transcript'),
                     title: const Text('Review transcript'),
                     subtitle: const Text('Available in this session only'),
                     childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -228,6 +230,7 @@ class _ResultState extends ConsumerState<ResultScreen> {
                 ],
               ),
               ExpansionTile(
+                key: const PageStorageKey('result-reference'),
                 title: const Text('Scan reference'),
                 childrenPadding: const EdgeInsets.all(16),
                 children: [SelectableText('Scan ID: ${scan['id']}')],

@@ -1,0 +1,44 @@
+{
+  "screenshots": [
+    {
+      "name": "home-390-light-1x",
+      "bytes": 51426
+    },
+    {
+      "name": "scan-email-390-light-1x",
+      "bytes": 42680
+    },
+    {
+      "name": "scan-url-390-light-1x",
+      "bytes": 51284
+    },
+    {
+      "name": "scan-voice-390-light-1x",
+      "bytes": 63292
+    },
+    {
+      "name": "result-safe-390-light-1x",
+      "bytes": 54017
+    },
+    {
+      "name": "result-suspicious-390-light-1x",
+      "bytes": 49813
+    },
+    {
+      "name": "result-high-risk-390-light-1x",
+      "bytes": 51132
+    },
+    {
+      "name": "history-390-light-1x",
+      "bytes": 42150
+    },
+    {
+      "name": "settings-390-light-1x",
+      "bytes": 46456
+    },
+    {
+      "name": "auth-390-light-1x",
+      "bytes": 34210
+    }
+  ]
+}

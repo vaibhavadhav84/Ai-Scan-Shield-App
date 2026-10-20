@@ -524,6 +524,7 @@ class EvidenceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Card(
     child: ExpansionTile(
+      key: PageStorageKey('evidence-${item['code'] ?? item['title']}'),
       title: Text(
         item['title'] as String,
         style: Theme.of(context).textTheme.titleSmall,
@@ -678,7 +679,10 @@ class _ApiPanelState extends State<ApiPanel> {
     future: data,
     builder: (context, snap) {
       if (snap.connectionState == ConnectionState.waiting) {
-        return const Padding(padding: EdgeInsets.all(20), child: LoadingSkeleton());
+        return const Padding(
+          padding: EdgeInsets.all(20),
+          child: LoadingSkeleton(),
+        );
       }
       if (snap.hasError) {
         return Padding(

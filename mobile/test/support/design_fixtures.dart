@@ -231,7 +231,11 @@ DioException offlineFixture() => DioException(
 
 // Platform transports are isolated here; these tests do not claim microphone,
 // audio playback, native file pickers, or clipboard permission validation.
-void installDesignPlatformFakes() {
+void installDesignPlatformFakes({
+  Future<bool> Function()? microphonePermission,
+  void Function()? onRecordingStart,
+  void Function()? onRecordingStop,
+}) {
   final messenger =
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
   void emptyEvents(String channel) => messenger.setMockMethodCallHandler(
@@ -260,7 +264,13 @@ void installDesignPlatformFakes() {
       if (call.method == 'create' && args is Map) {
         emptyEvents('com.llfbandit.record/events/${args['recorderId']}');
       }
-      if (call.method == 'hasPermission') return false;
+      if (call.method == 'hasPermission') {
+        return microphonePermission == null
+            ? false
+            : await microphonePermission();
+      }
+      if (call.method == 'start') onRecordingStart?.call();
+      if (call.method == 'stop') onRecordingStop?.call();
       if (call.method == 'isRecording' || call.method == 'isPaused') {
         return false;
       }

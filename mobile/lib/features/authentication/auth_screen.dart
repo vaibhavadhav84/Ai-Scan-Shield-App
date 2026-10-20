@@ -33,13 +33,15 @@ class _AuthState extends ConsumerState<AuthScreen> {
 
   void navigate(_AuthStep next) {
     if (busy) return;
+    final address = email.text;
+    form.currentState?.reset();
     setState(() {
+      email.text = address;
       step = next;
       message = null;
       visible = false;
       password.clear();
     });
-    form.currentState?.reset();
   }
 
   Future<void> run(Future<void> Function() task) async {

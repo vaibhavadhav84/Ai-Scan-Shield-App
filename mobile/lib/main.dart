@@ -23,7 +23,18 @@ Future<void> main() async {
         darkTheme: appTheme(Brightness.dark),
         home: Scaffold(
           appBar: AppBar(title: const Brand()),
-          body: PageBody(children: [EmptyState(icon: Icons.lock_outline_rounded, title: 'Couldn’t open secure storage', body: 'Check the available storage on your device, then try again.', actionLabel: 'Retry', onAction: main)]),
+          body: PageBody(
+            children: [
+              EmptyState(
+                icon: Icons.lock_outline_rounded,
+                title: 'Couldn’t open secure storage',
+                body:
+                    'Check the available storage on your device, then try again.',
+                actionLabel: 'Retry',
+                onAction: main,
+              ),
+            ],
+          ),
         ),
       ),
     );

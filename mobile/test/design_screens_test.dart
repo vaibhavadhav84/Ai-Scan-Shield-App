@@ -22,6 +22,7 @@ import 'support/design_fixtures.dart';
 void main() => registerDesignTests();
 
 typedef DesignCapture = Future<void> Function(WidgetTester tester, String name);
+final designCaptureKey = GlobalKey();
 
 Future<void> settleDesign(WidgetTester tester) async {
   // Bounded pumps deliberately work even when a genuine request is pending.
@@ -41,6 +42,9 @@ Future<void> mountDesign(
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = Size(width, 844);
+  tester.view.padding = const FakeViewPadding(top: 24, bottom: 24);
+  tester.view.viewPadding = const FakeViewPadding(top: 24, bottom: 24);
+  tester.view.viewInsets = const FakeViewPadding();
   final service = api ?? DesignApi();
   final router = GoRouter(
     initialLocation: '/case',
@@ -87,17 +91,21 @@ Future<void> mountDesign(
     ],
   );
   await tester.pumpWidget(
-    ProviderScope(
-      overrides: [apiProvider.overrideWithValue(service)],
-      child: MaterialApp.router(
-        theme: appTheme(brightness),
-        routerConfig: router,
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(scale),
-            disableAnimations: true,
+    RepaintBoundary(
+      key: designCaptureKey,
+      child: ProviderScope(
+        overrides: [apiProvider.overrideWithValue(service)],
+        child: MaterialApp.router(
+          debugShowCheckedModeBanner: false,
+          theme: appTheme(brightness),
+          routerConfig: router,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(scale),
+              disableAnimations: true,
+            ),
+            child: child!,
           ),
-          child: child!,
         ),
       ),
     ),
@@ -108,11 +116,18 @@ Future<void> mountDesign(
     router.dispose();
     tester.view.resetPhysicalSize();
     tester.view.resetDevicePixelRatio();
+    tester.view.resetPadding();
+    tester.view.resetViewPadding();
+    tester.view.resetViewInsets();
   });
   await settleDesign(tester);
 }
 
 Future<void> tapDesign(WidgetTester tester, Finder finder) async {
+  // Let field focus/scroll requests complete before locating the control.
+  await settleDesign(tester);
+  await tester.ensureVisible(finder.first);
+  await settleDesign(tester);
   await tester.ensureVisible(finder.first);
   await tester.pump();
   await tester.tap(finder.first);
@@ -156,6 +171,130 @@ void registerDesignTests({DesignCapture? capture}) {
     await mountDesign(tester, const HomeScreen(), api: DesignApi(empty: true));
     expect(find.byType(ScanTile), findsNothing);
     expect(find.byType(EmptyState), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('shared text requires consent before replacing an SMS draft', (
+    tester,
+  ) async {
+    final api = DesignApi();
+    await mountDesign(tester, const ScanScreen(), api: api);
+    final input = find.byKey(const ValueKey('scan-input-sms'));
+    await tester.enterText(input, 'Keep this draft');
+    api.receiveSharedText('Incoming shared text');
+    await settleDesign(tester);
+    expect(find.text('Replace SMS draft?'), findsOneWidget);
+    await tapDesign(tester, find.text('Cancel'));
+    expect(tester.widget<TextField>(input).controller!.text, 'Keep this draft');
+    api.receiveSharedText('Incoming shared text');
+    await settleDesign(tester);
+    await tapDesign(tester, find.text('Replace draft'));
+    expect(
+      tester.widget<TextField>(input).controller!.text,
+      'Incoming shared text',
+    );
+  });
+
+  testWidgets('scan draft survives tab changes and keyboard insets', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.padding = const FakeViewPadding(top: 24, bottom: 24);
+    tester.view.viewPadding = const FakeViewPadding(top: 24, bottom: 24);
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox.shrink());
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+      tester.view.resetPadding();
+      tester.view.resetViewPadding();
+      tester.view.resetViewInsets();
+    });
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [apiProvider.overrideWithValue(DesignApi())],
+        child: const ShieldApp(),
+      ),
+    );
+    await settleDesign(tester);
+    await tapDesign(tester, find.byTooltip('Scan'));
+    final input = find.byKey(const ValueKey('scan-input-sms'));
+    await tester.enterText(input, 'Draft survives navigation');
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    await settleDesign(tester);
+    await tester.ensureVisible(find.text('Analyze message'));
+    await settleDesign(tester);
+    expect(tester.takeException(), isNull);
+    tester.view.resetViewInsets();
+    FocusManager.instance.primaryFocus?.unfocus();
+    await settleDesign(tester);
+    await tapDesign(tester, find.byTooltip('History'));
+    await tapDesign(tester, find.byTooltip('Scan'));
+    expect(
+      tester.widget<TextField>(input).controller!.text,
+      'Draft survives navigation',
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'microphone permission resolving behind Help cannot start recording',
+    (tester) async {
+      final permission = Completer<bool>();
+      var starts = 0;
+      installDesignPlatformFakes(
+        microphonePermission: () => permission.future,
+        onRecordingStart: () => starts++,
+      );
+      await mountDesign(tester, const ScanScreen(initialChannel: 'voice'));
+      await tapDesign(tester, find.text('Record with consent'));
+      await tapDesign(tester, find.text('Confirm'));
+      final router = GoRouter.of(tester.element(find.byType(ScanScreen)));
+      router.push('/help');
+      await settleDesign(tester);
+      permission.complete(true);
+      await settleDesign(tester);
+      expect(starts, 0);
+      expect(find.byType(HelpScreen), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('covering the voice screen stops an active recording', (
+    tester,
+  ) async {
+    var starts = 0;
+    var stops = 0;
+    installDesignPlatformFakes(
+      microphonePermission: () async => true,
+      onRecordingStart: () => starts++,
+      onRecordingStop: () => stops++,
+    );
+    await mountDesign(tester, const ScanScreen(initialChannel: 'voice'));
+    await tapDesign(tester, find.text('Record with consent'));
+    await tapDesign(tester, find.text('Confirm'));
+    await settleDesign(tester);
+    expect(starts, 1);
+    final router = GoRouter.of(tester.element(find.byType(ScanScreen)));
+    router.push('/help');
+    await settleDesign(tester);
+    expect(stops, 1);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('account deletion requires a password before any request', (
+    tester,
+  ) async {
+    final api = DesignApi();
+    await mountDesign(tester, const ProfileScreen(), api: api);
+    await tapDesign(tester, find.text('Permanently delete my account'));
+    await tapDesign(
+      tester,
+      find.widgetWithText(FilledButton, 'Delete account'),
+    );
+    expect(find.text('Enter your password.'), findsOneWidget);
+    expect(api.calls.where((call) => call.method == 'DELETE'), isEmpty);
+    await tapDesign(tester, find.text('Cancel'));
     expect(tester.takeException(), isNull);
   });
 
@@ -407,10 +546,16 @@ void registerDesignTests({DesignCapture? capture}) {
       expect(api.calls, isEmpty);
       await tapDesign(tester, find.byTooltip('Show password'));
       expect(find.byTooltip('Hide password'), findsOneWidget);
+      final emailField = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField && widget.decoration?.labelText == 'Email',
+      );
+      await tester.enterText(emailField, 'recovery@example.test');
       await tapDesign(tester, find.text('Forgot password?'));
       expect(find.text('Reset your password'), findsOneWidget);
       expect(find.text('Password'), findsNothing);
       expect(find.text('Send recovery instructions'), findsOneWidget);
+      expect(find.text('recovery@example.test'), findsOneWidget);
     },
   );
 
@@ -446,23 +591,33 @@ void registerDesignTests({DesignCapture? capture}) {
     'design loading error and retry states are truthful and recoverable',
     (tester) async {
       var attempts = 0;
-      final pending = Completer<Json>();
+      final pending = Completer<void>();
+      final retry = Completer<Json>();
       await mountDesign(
         tester,
         ApiPanel(
-          load: () {
+          load: () async {
             attempts++;
-            return attempts == 1 ? pending.future : Future.value({'ok': true});
+            if (attempts == 1) {
+              await pending.future;
+              throw offlineFixture();
+            }
+            return retry.future;
           },
           builder: (_) => const Text('Recovered content'),
         ),
       );
       expect(find.text('Recovered content'), findsNothing);
       expect(find.byType(LoadingSkeleton), findsOneWidget);
-      pending.completeError(offlineFixture());
+      pending.complete();
       await settleDesign(tester);
       expect(find.textContaining('Cannot reach'), findsOneWidget);
       await tapDesign(tester, find.text('Retry'));
+      expect(find.text('Retry'), findsNothing);
+      expect(find.byType(LoadingSkeleton), findsOneWidget);
+      expect(attempts, 2);
+      retry.complete({'ok': true});
+      await settleDesign(tester);
       expect(find.text('Recovered content'), findsOneWidget);
       expect(attempts, 2);
     },

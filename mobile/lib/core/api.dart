@@ -227,7 +227,11 @@ String errorMessage(Object error) {
     return 'This file is too large. Choose a WAV up to 10 MB or an email file up to 512 KB.';
   }
   if (error is DioException) {
-    if ({DioExceptionType.connectionTimeout, DioExceptionType.sendTimeout, DioExceptionType.receiveTimeout}.contains(error.type)) {
+    if ({
+      DioExceptionType.connectionTimeout,
+      DioExceptionType.sendTimeout,
+      DioExceptionType.receiveTimeout,
+    }.contains(error.type)) {
       return 'The service took too long to respond. Your input is still available; check your connection and try again.';
     }
     final data = error.response?.data;

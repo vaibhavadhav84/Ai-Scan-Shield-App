@@ -160,6 +160,7 @@ class _HomeState extends ConsumerState<HomeScreen> {
           SurfaceCard(
             padding: EdgeInsets.zero,
             child: ExpansionTile(
+              key: const PageStorageKey('home-boundaries'),
               title: const Text('Know your protection boundaries'),
               subtitle: const Text(
                 'You choose the content. You stay in control.',

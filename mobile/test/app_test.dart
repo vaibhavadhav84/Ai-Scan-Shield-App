@@ -19,6 +19,16 @@ void main() {
     );
     expect(riskColor('High Risk'), isNot(riskColor('Safe')));
     expect(timestamp(0).length, 16);
+    expect(errorMessage(StateError('File too large')), contains('512 KB'));
+    expect(
+      errorMessage(
+        DioException(
+          requestOptions: RequestOptions(path: '/scans'),
+          type: DioExceptionType.receiveTimeout,
+        ),
+      ),
+      contains('took too long'),
+    );
   });
   testWidgets('first-use onboarding leads to sign-in without permissions', (
     tester,
@@ -36,7 +46,7 @@ void main() {
     await tester.tap(find.text('Get started'));
     await tester.pumpAndSettle();
     expect(find.text('Welcome back'), findsOneWidget);
-    expect(find.text('Email address'), findsOneWidget);
+    expect(find.text('Email'), findsOneWidget);
   });
   testWidgets('result label conveys risk without color', (tester) async {
     final semantics = tester.ensureSemantics();

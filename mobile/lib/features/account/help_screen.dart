@@ -12,6 +12,7 @@ class HelpScreen extends StatelessWidget {
   }) => SurfaceCard(
     padding: EdgeInsets.zero,
     child: ExpansionTile(
+      key: PageStorageKey('help-$title'),
       leading: Icon(icon),
       title: Text(title, style: Theme.of(context).textTheme.titleSmall),
       expandedCrossAxisAlignment: CrossAxisAlignment.stretch,

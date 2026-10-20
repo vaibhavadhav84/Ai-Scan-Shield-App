@@ -11,8 +11,19 @@ Future<void> main() async {
       return true;
     },
     responseDataCallback: (data) async {
+      final summary = <String, dynamic>{...?data};
+      final screenshots = summary['screenshots'];
+      if (screenshots is List) {
+        summary['screenshots'] = [
+          for (final entry in screenshots)
+            {
+              'name': entry['screenshotName'],
+              'bytes': (entry['bytes'] as List).length,
+            },
+        ];
+      }
       await writeResponseData(
-        data,
+        summary,
         destinationDirectory: output.path,
         testOutputFilename: 'integration-response',
       );
